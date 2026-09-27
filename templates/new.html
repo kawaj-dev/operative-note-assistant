@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}{{ '下書きの再開' if editor_state.id else '新規記録' }} | Operative Note Assistant{% endblock %}
+{% block head %}<meta name="csrf-token" content="{{ csrf }}">{% endblock %}
+{% block content %}
+<div class="page-heading compact"><div><p class="eyebrow">OPERATIVE NOTE / DRAFT</p><h1>{{ '下書きの再開' if editor_state.id else '新規手術記録' }}</h1></div><a href="{{ url_for('index') }}">症例一覧へ</a></div>
+<nav class="progress" aria-label="入力ステップ">{% for title, help, fields in steps %}<button type="button" data-step="{{ loop.index0 }}"><span>{{ '%02d'|format(loop.index) }}</span>{{ title }}</button>{% endfor %}</nav>
+<div class="step-meta"><span id="step-count"></span><span>入力内容は下書きとして自動保存されます</span></div>
+<div class="draft-bar"><span id="save-status" role="status">入力を待っています</span><button type="button" id="save-draft" form="note-form">下書き保存</button></div>
+<form id="note-form" novalidate>
+{% for title, help, fields in steps %}
+<section class="card step" data-panel="{{ loop.index0 }}" {% if not loop.first %}hidden{% endif %}>
+  <p class="eyebrow">STEP {{ '%02d'|format(loop.index) }}</p><h2 tabindex="-1">{{ title }}</h2><p class="muted">{{ help }}</p>
+  <div class="field-grid">{% for field in fields %}<div data-field="{{ field.name }}" class="field {% if field.kind in ['textarea', 'checks'] %}wide{% endif %}">
+    {% if field.kind == 'repeat' %}
+    <fieldset class="repeat-field"><legend>{{ field.label }}</legend><div id="{{ field.name }}-rows"></div><button type="button" data-add="{{ field.name }}">＋{{ field.label }}を追加</button></fieldset>
+    {% elif field.kind == 'checks' %}
+    <fieldset class="checkbox-field"><legend>{{ field.label }}（複数選択）</legend>{% for option in field.options %}<label class="check-option"><input type="checkbox" name="{{ field.name }}" value="{{ option }}" {% if option in note[field.name] %}checked{% endif %}>{{ option }}</label>{% endfor %}</fieldset>
+    {% else %}
+    <label for="{{ field.name }}">{{ field.label }}{% if field.required %} <span class="required">*</span>{% endif %}</label>
+    {% if field.kind == 'select' %}<select id="{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}><option value="">選択してください</option>{% for option in field.options %}<option {% if note[field.name] == option %}selected{% endif %}>{{ option }}</option>{% endfor %}</select>
+    {% elif field.kind == 'textarea' %}<textarea id="{{ field.name }}" name="{{ field.name }}" rows="4" maxlength="4000">{{ note[field.name] }}</textarea>
+    {% else %}<input id="{{ field.name }}" name="{{ field.name }}" type="{{ field.kind }}" value="{{ note[field.name] }}" {% if field.required %}required{% endif %} {% if field.name == 'case_id' %}pattern="DEMO-[0-9]{3}" placeholder="DEMO-003" aria-describedby="case-help"{% endif %} {% if field.kind == 'number' %}min="0" max="999999.9" step="0.1"{% endif %} maxlength="200">{% endif %}
+    {% if field.name == 'case_id' %}<small id="case-help">DEMO- と半角数字3桁のみ使用できます。</small>{% endif %}
+    {% endif %}
+  </div>{% endfor %}</div>
+  {% if loop.index0 == 0 %}<div class="duration">手術時間 <output id="duration">開始・終了時刻を入力してください</output><small>終了が開始より前なら翌日として計算します（24時間未満）。同じ時刻は0分です。</small></div>{% endif %}
+  {% if loop.index0 == 7 %}<div id="diagram-editor"></div>{% endif %}
+  {% if loop.index0 == 9 %}<div id="review"></div><label class="confirmation"><input type="checkbox" id="fiction-confirm">入力内容がすべて架空であることを確認しました。</label>{% endif %}
+</section>
+{% endfor %}
+<p id="form-error" class="error" role="alert" hidden></p>
+<div class="form-navigation"><button type="button" id="previous">← 前へ</button><button type="button" id="next" class="primary">次へ →</button><button type="submit" id="save" class="primary" hidden>確認して保存</button></div>
+</form>
+<script type="application/json" id="initial-diagrams">{{ diagrams|tojson }}</script>
+<script type="application/json" id="diagram-config">{{ {'specs': diagram_specs, 'layers': object_layers}|tojson }}</script>
+<script type="application/json" id="field-config">{{ steps|tojson }}</script>
+<script type="application/json" id="initial-note">{{ note|tojson }}</script>
+<script type="application/json" id="editor-state">{{ editor_state|tojson }}</script>
+{% endblock %}
+{% block scripts %}<script type="module" src="{{ url_for('static', filename='form.js') }}"></script>{% endblock %}

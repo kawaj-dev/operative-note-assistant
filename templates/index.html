@@ -1,0 +1,7 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-heading compact"><div><h1>症例一覧</h1><span class="muted">{{ notes|length }} 件の架空症例</span></div><a class="button primary" href="{{ url_for('new_note') }}">＋ 新規記録を作成</a></div>
+<section class="card">
+{% if notes %}<div class="table-wrap"><table><thead><tr><th>症例ID</th><th>状態</th><th>手術日</th><th>術式</th><th>最終保存（UTC）</th><th></th></tr></thead><tbody>{% for note in notes %}<tr><td><strong>{{ note.case_id or '症例ID未入力' }}</strong>{% if not note.case_id %}<small> / 下書き {{ note.id }}</small>{% endif %}</td><td><span class="badge {{ 'draft-badge' if note.status == 'draft' else '' }}">{{ '下書き' if note.status == 'draft' else '完成' }}</span></td><td>{{ note.operation_date or '未記録' }}</td><td>{{ note.procedure or '未記録' }}</td><td><small>{{ note.updated_at|replace('T', ' ')|replace('+00:00', '') }}</small></td><td><a href="{{ url_for('edit_note' if note.status == 'draft' else 'detail', note_id=note.id) }}">{{ '入力を再開' if note.status == 'draft' else '記録を見る' }} →</a></td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="empty"><h3>まだ記録がありません</h3><p>新規記録を作成するか、READMEの手順で架空デモ症例を追加してください。</p></div>{% endif %}</section>
+<p class="muted">デモ症例はゼロから作成した架空データです。実在情報を匿名化したものではありません。</p>
+{% endblock %}

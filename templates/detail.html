@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}{{ note.case_id }} | Operative Note Assistant{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">COMPLETED OPERATIVE NOTE</p><h1>{{ note.case_id }}</h1><p class="muted">{{ note.operation_date }} · {{ note.procedure_other if note.procedure == 'その他（自由入力）' else note.procedure }} · 完成 / 閲覧のみ</p></div><a class="button" href="{{ url_for('index') }}">症例一覧へ</a></div>
+{% for title, help, fields in steps %}
+{% if fields %}
+<section class="card detail-section"><h2>{{ title }}</h2><dl class="record-grid">
+  {% for field in fields %}{% if field_visible(field, note) %}<div class="{% if field.kind == 'textarea' %}wide{% endif %}"><dt>{{ field.label }}</dt><dd>{{ display_value(note[field.name]) or '未記録' }}</dd></div>{% endif %}{% endfor %}
+  {% if title == '基本情報' %}<div><dt>手術時間</dt><dd>{{ (note.duration_minutes|string + ' 分') if note.duration_minutes is not none else '未記録' }}</dd></div>{% endif %}
+</dl></section>
+{% elif title == '手術図' %}<section class="card"><h2>手術図</h2><div id="saved-diagrams"></div></section>{% endif %}
+{% endfor %}
+{% set legacy = namespace(found=false) %}{% for name in legacy_fields %}{% if note.get(name) %}{% set legacy.found = true %}{% endif %}{% endfor %}
+{% if legacy.found %}<section class="card"><h2>旧フォームで保存された項目</h2><dl class="record-grid">{% for name, label in legacy_fields.items() %}{% if note.get(name) %}<div><dt>{{ label }}</dt><dd>{{ note[name] }}</dd></div>{% endif %}{% endfor %}</dl></section>{% endif %}
+<script type="application/json" id="initial-diagrams">{{ diagrams|tojson }}</script>
+<script type="application/json" id="diagram-config">{{ {'specs': diagram_specs, 'layers': object_layers}|tojson }}</script>
+{% endblock %}
+{% block scripts %}<script type="module" src="{{ url_for('static', filename='detail.js') }}"></script>{% endblock %}
