@@ -1,6 +1,7 @@
 import json
 import sqlite3
 from datetime import datetime, timezone
+from pathlib import Path
 
 from flask import current_app, g
 
@@ -21,8 +22,7 @@ CREATE TABLE IF NOT EXISTS operative_diagrams (
     operative_note_id INTEGER NOT NULL REFERENCES operative_notes(id) ON DELETE CASCADE,
     diagram_type TEXT NOT NULL,
     base_template TEXT NOT NULL,
-    state_json TEXT NOT NULL,
-    UNIQUE(operative_note_id, diagram_type)
+    state_json TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS diagram_objects (
     id INTEGER PRIMARY KEY,
@@ -51,6 +51,14 @@ def close_db(_error=None):
 def init_db():
     db = get_db()
     columns = {row["name"] for row in db.execute("PRAGMA table_info(operative_notes)")}
+    diagram_unique = any(row["unique"] for row in db.execute("PRAGMA index_list(operative_diagrams)"))
+    if (columns and "status" not in columns) or diagram_unique:
+        # SQLite backup API captures a consistent snapshot, including any WAL pages.
+        location = current_app.config["DATABASE"]
+        if location != ":memory:":
+            backup = Path(str(location) + ".pre-diagrams-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%f") + ".bak")
+            with sqlite3.connect(backup) as destination:
+                db.backup(destination)
     if columns and "status" not in columns:
         # SQLite cannot remove NOT NULL in place. Keep IDs and child rows intact.
         db.execute("PRAGMA foreign_keys = OFF")
@@ -71,6 +79,26 @@ def init_db():
             db.execute("ALTER TABLE operative_notes_new RENAME TO operative_notes")
             if db.execute("PRAGMA foreign_key_check").fetchall():
                 raise RuntimeError("DB移行時の外部キー検証に失敗しました。")
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            db.execute("PRAGMA foreign_keys = ON")
+    if diagram_unique:
+        db.execute("PRAGMA foreign_keys = OFF")
+        try:
+            db.execute("BEGIN IMMEDIATE")
+            db.execute("""CREATE TABLE operative_diagrams_new (
+                id INTEGER PRIMARY KEY,
+                operative_note_id INTEGER NOT NULL REFERENCES operative_notes(id) ON DELETE CASCADE,
+                diagram_type TEXT NOT NULL, base_template TEXT NOT NULL, state_json TEXT NOT NULL
+            )""")
+            db.execute("INSERT INTO operative_diagrams_new SELECT * FROM operative_diagrams")
+            db.execute("DROP TABLE operative_diagrams")
+            db.execute("ALTER TABLE operative_diagrams_new RENAME TO operative_diagrams")
+            if db.execute("PRAGMA foreign_key_check").fetchall():
+                raise RuntimeError("手術図のDB移行に失敗しました。")
             db.commit()
         except Exception:
             db.rollback()

@@ -34,6 +34,8 @@ const editor = new DiagramEditor(
   document.querySelector('#diagram-editor'),
   JSON.parse(document.querySelector('#initial-diagrams').textContent),
   markDirty,
+  () => persist('draft', true),
+  () => noteData(),
 );
 
 function repeatRows(field, values) {
@@ -120,6 +122,7 @@ function showError(message, fromSave = false) {
   error.hidden = false;
 }
 function showStep(index, remember = true) {
+  if (current === 7 && index !== 7) editor.cancelGesture();
   current = index;
   panels.forEach((panel, i) => panel.hidden = i !== index);
   document.querySelectorAll('[data-step]').forEach((button, i) => {
@@ -130,6 +133,7 @@ function showStep(index, remember = true) {
   document.querySelector('#previous').disabled = index === 0;
   document.querySelector('#next').hidden = index === 9;
   document.querySelector('#save').hidden = index !== 9;
+  if (index === 7) { editor.updateReference(); editor.refresh(); }
   if (index === 9) review();
   panels[index].querySelector('h2').focus({preventScroll: true});
   if (remember && (state.id || version > 0)) markDirty();
@@ -233,6 +237,7 @@ function inputChanged(event) {
   if (!event.target.name) return;
   conditions();
   if (event.target.name === 'position') editor.setPosition(event.target.value);
+  editor.updateReference();
   updateDuration();
   error.hidden = true;
   markDirty();

@@ -8,8 +8,9 @@ from flask import Flask, abort, jsonify, redirect, render_template, request, ses
 from werkzeug.exceptions import BadRequest, RequestEntityTooLarge
 
 from db import SaveConflict, close_db, get_db, init_db, load_diagrams, save_note
-from fields import DIAGRAMS, OBJECT_LAYERS, STEPS, LEGACY_FIELDS, blank_note, demo_payload, display_value, empty_diagrams, field_visible, normalize_note
+from fields import DIAGRAMS, OBJECT_LAYERS, STEPS, LEGACY_FIELDS, blank_note, demo_payload, display_value, field_visible, normalize_note
 from validation import ValidationError, validate_payload
+from diagram_specs import TEMPLATES, GUIDES
 
 
 def create_app(test_config=None):
@@ -24,7 +25,7 @@ def create_app(test_config=None):
 
     @app.context_processor
     def common():
-        return dict(steps=STEPS, diagram_specs=DIAGRAMS, object_layers=OBJECT_LAYERS, field_visible=field_visible, display_value=display_value, legacy_fields=LEGACY_FIELDS)
+        return dict(steps=STEPS, diagram_specs=DIAGRAMS, object_layers=OBJECT_LAYERS, diagram_templates=TEMPLATES, diagram_guides=GUIDES, field_visible=field_visible, display_value=display_value, legacy_fields=LEGACY_FIELDS)
 
     @app.after_request
     def security_headers(response):
@@ -47,7 +48,7 @@ def create_app(test_config=None):
     @app.get("/notes/new")
     def new_note():
         session.setdefault("csrf", secrets.token_hex(32))
-        return render_template("new.html", note=blank_note(), diagrams=empty_diagrams(""), csrf=session["csrf"], editor_state=dict(id=None, revision=None, step=0, creation_key=secrets.token_hex(16), updated_at=None))
+        return render_template("new.html", note=blank_note(), diagrams=[], csrf=session["csrf"], editor_state=dict(id=None, revision=None, step=0, creation_key=secrets.token_hex(16), updated_at=None))
 
     @app.get("/notes/<int:note_id>/edit")
     def edit_note(note_id):
