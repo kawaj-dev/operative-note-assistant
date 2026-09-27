@@ -8,7 +8,8 @@ def field(name, label, kind="text", options=None, required=False, when=None):
 POSITIONS = ["左側臥位", "右側臥位", "仰臥位"]
 OTHER = "その他（自由入力）"
 LOBECTOMY = "肺葉切除術（Lobectomy）"
-PROCEDURES = [LOBECTOMY, "区域切除術（Segmentectomy）", "部分切除術 / 楔状切除術（Wedge Resection）", "肺全摘術（Pneumonectomy）", OTHER]
+SEGMENTECTOMY = "区域切除術（Segmentectomy）"
+PROCEDURES = [LOBECTOMY, SEGMENTECTOMY, "部分切除術 / 楔状切除術（Wedge Resection）", "肺全摘術（Pneumonectomy）", OTHER]
 STATIONS = ["#2R　上気管傍リンパ節", "#4R　下気管傍リンパ節", "#7　気管分岐下リンパ節", "#10　肺門リンパ節", "#11　葉間リンパ節", "#12　区域間リンパ節", "#13　亜区域間リンパ節"]
 STEPS = [
     ("基本情報", "この記録は完全架空のデモ症例です。必須項目は * で示しています。", [
@@ -37,6 +38,8 @@ STEPS = [
         field("vein", "肺静脈の処理", "textarea", when={"procedure": LOBECTOMY}),
         field("artery", "肺動脈の処理", "textarea", when={"procedure": LOBECTOMY}),
         field("bronchus", "気管支の処理", "textarea", when={"procedure": LOBECTOMY}),
+        field("segment_side", "区域切除の対象側", "select", ["右肺", "左肺"], when={"procedure": SEGMENTECTOMY}),
+        field("segment_target", "対象区域名（自由入力・任意）", when={"procedure": SEGMENTECTOMY}),
         field("resection_note", "術式詳細・補足", "textarea"),
     ]),
     ("リンパ節郭清", "実施有無を選び、必要に応じて郭清度・リンパ節を記録します。", [
@@ -54,14 +57,14 @@ STEPS = [
         field("blood_loss", "出血量（mL）", "number"),
         field("transfusion", "輸血", "select", ["なし", "あり"]),
     ]),
-    ("手術図", "3種類の図に、必要な位置・形・操作を記録できます。", []),
-    ("手術所見・手術経過", "構造化項目だけでは表せない内容を記載します。架空の情報のみ入力してください。", [
-        field("findings", "手術所見", "textarea"),
-        field("course", "手術経過", "textarea"),
+    ("手術図", "症例に必要な手術図を追加してください。複数追加でき、手術図なしでも進めます。", []),
+    ("手術所見・手術経過", "構造化項目や手術図だけでは表せない、症例ごとの手術所見・手術経過を記録します。", [
+        field("narrative", "手術所見・手術経過", "textarea"),
     ]),
     ("内容確認・保存", "必要な項目を確認して完成保存します。下書きは各ステップから保存・再開できます。", []),
 ]
 FIELDS = [item for _, _, items in STEPS for item in items]
+LEGACY_NARRATIVE_FIELDS = [field("findings", "手術所見（旧入力）", "textarea"), field("course", "手術経過（旧入力）", "textarea")]
 
 
 def field_visible(item, note):
@@ -72,9 +75,15 @@ def blank_note():
     return {item["name"]: ([""] if item["kind"] == "repeat" else [] if item["kind"] == "checks" else "") for item in FIELDS}
 
 
+def merge_narrative(data):
+    """Keep both legacy texts, including their original whitespace and headings."""
+    return "\n\n".join(label + "\n" + data[key] for key, label in (("findings", "【手術所見】"), ("course", "【手術経過】")) if data.get(key))
+
 def normalize_note(data):
     """Read legacy completed records without rewriting or discarding their contents."""
     note = {**blank_note(), **data}
+    if "narrative" not in data:
+        note["narrative"] = merge_narrative(data)
     for name in ("surgeon", "assistant"):
         if isinstance(note[name], str):
             note[name] = ["架空助手A", "架空助手B"] if note[name] == "架空助手A・B" else [note[name]]
@@ -105,7 +114,9 @@ def empty_diagrams(position="左側臥位"):
 def demo_payload():
     note = blank_note()
     note.update(case_id="DEMO-001", operation_date="2026-01-01", pre_diagnosis="右上葉肺癌（架空）", post_diagnosis="右上葉肺癌（架空）", procedure="右上葉切除術", lobe="右上葉", position="左側臥位", surgeon="架空術者A", assistant="架空助手A", anesthesia="架空麻酔担当A", start_time="09:00", end_time="11:30", findings="機能確認のためにゼロから作成した架空症例。医学的な詳細は未記録。", course="ガイド入力と手術図保存の機能検証用。")
+    note.pop("narrative", None)
     note = normalize_note(note)
+    note.pop("narrative", None)  # Keep the legacy seed payload useful for compatibility tests.
     diagrams = empty_diagrams()
     diagrams[0]["objects"] = [dict(id="demo-port", type="PORT", x=280, y=230, rotation=0, number=1)]
     diagrams[0]["next_port"] = 2

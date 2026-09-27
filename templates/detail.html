@@ -13,6 +13,6 @@
 {% set legacy = namespace(found=false) %}{% for name in legacy_fields %}{% if note.get(name) %}{% set legacy.found = true %}{% endif %}{% endfor %}
 {% if legacy.found %}<section class="card"><h2>旧フォームで保存された項目</h2><dl class="record-grid">{% for name, label in legacy_fields.items() %}{% if note.get(name) %}<div><dt>{{ label }}</dt><dd>{{ note[name] }}</dd></div>{% endif %}{% endfor %}</dl></section>{% endif %}
 <script type="application/json" id="initial-diagrams">{{ diagrams|tojson }}</script>
-<script type="application/json" id="diagram-config">{{ {'specs': diagram_specs, 'layers': object_layers}|tojson }}</script>
+<script type="application/json" id="diagram-config">{{ {'specs': diagram_specs, 'layers': object_layers, 'templates': diagram_templates, 'guides': diagram_guides}|tojson }}</script>
 {% endblock %}
 {% block scripts %}<script type="module" src="{{ url_for('static', filename='detail.js') }}"></script>{% endblock %}

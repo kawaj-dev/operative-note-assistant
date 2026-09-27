@@ -18,8 +18,9 @@
     {% else %}
     <label for="{{ field.name }}">{{ field.label }}{% if field.required %} <span class="required">*</span>{% endif %}</label>
     {% if field.kind == 'select' %}<select id="{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}><option value="">選択してください</option>{% for option in field.options %}<option {% if note[field.name] == option %}selected{% endif %}>{{ option }}</option>{% endfor %}</select>
-    {% elif field.kind == 'textarea' %}<textarea id="{{ field.name }}" name="{{ field.name }}" rows="4" maxlength="4000">{{ note[field.name] }}</textarea>
+    {% elif field.kind == 'textarea' %}<textarea id="{{ field.name }}" name="{{ field.name }}" rows="{{ 10 if field.name == 'narrative' else 4 }}" maxlength="{{ 10000 if field.name == 'narrative' else 4000 }}">{{ note[field.name] }}</textarea>
     {% else %}<input id="{{ field.name }}" name="{{ field.name }}" type="{{ field.kind }}" value="{{ note[field.name] }}" {% if field.required %}required{% endif %} {% if field.name == 'case_id' %}pattern="DEMO-[0-9]{3}" placeholder="DEMO-003" aria-describedby="case-help"{% endif %} {% if field.kind == 'number' %}min="0" max="999999.9" step="0.1"{% endif %} maxlength="200">{% endif %}
+    {% if field.name == 'segment_target' %}<small>区域名の固定選択肢は未整備です。図から自動判定せず、入力した名称をそのまま保存します。</small>{% endif %}
     {% if field.name == 'case_id' %}<small id="case-help">DEMO- と半角数字3桁のみ使用できます。</small>{% endif %}
     {% endif %}
   </div>{% endfor %}</div>
@@ -32,7 +33,7 @@
 <div class="form-navigation"><button type="button" id="previous">← 前へ</button><button type="button" id="next" class="primary">次へ →</button><button type="submit" id="save" class="primary" hidden>確認して保存</button></div>
 </form>
 <script type="application/json" id="initial-diagrams">{{ diagrams|tojson }}</script>
-<script type="application/json" id="diagram-config">{{ {'specs': diagram_specs, 'layers': object_layers}|tojson }}</script>
+<script type="application/json" id="diagram-config">{{ {'specs': diagram_specs, 'layers': object_layers, 'templates': diagram_templates, 'guides': diagram_guides}|tojson }}</script>
 <script type="application/json" id="field-config">{{ steps|tojson }}</script>
 <script type="application/json" id="initial-note">{{ note|tojson }}</script>
 <script type="application/json" id="editor-state">{{ editor_state|tojson }}</script>
