@@ -89,3 +89,75 @@ input:not([type=checkbox]),select,textarea {font-size:16px;border-color:#879f93;
 #diagram-editor .canvas-wrap {background:#fff;border-color:#819c8c}
 #narrative {min-height:280px}
 @media(max-width:800px){.workspace-tools{grid-template-columns:1fr}.diagram-workspace-item{padding:16px}.progress button{font-size:12px}.progress button span{font-size:16px}}
+
+/* Compact desktop UI at normal browser zoom; data and editing behavior unchanged. */
+:root {--line:#94aaa0;--muted:#465c53;line-height:1.55}
+.site-header {padding:10px 24px;gap:12px}
+.brand {font-weight:700;line-height:1.35}
+.brand small {font-size:13px}
+.brand-mark {height:36px;width:36px;line-height:36px}
+.badge {font-size:13px;font-weight:600;border-color:#91aaa0}
+.privacy {padding:6px 24px;color:#624916;border-bottom:1px solid #d6c493;font-weight:700;line-height:1.5}
+.privacy span {color:#665431}
+main {max-width:1560px;padding:16px 24px 36px}
+.page-heading,.page-heading.compact {margin:0 0 12px;gap:16px}
+h1 {font-size:25px;font-weight:750;color:#18382e;margin:0}
+h2 {font-size:21px;font-weight:700;margin:0 0 6px;color:#18382e}
+h3 {font-weight:650;color:#203f34}
+.eyebrow {font-size:12px;letter-spacing:1px;margin:0 0 2px}
+.card {padding:18px 20px;border:1.5px solid var(--line);border-radius:6px;margin-bottom:14px}
+.progress {grid-template-columns:repeat(10,minmax(100px,1fr));gap:4px;margin:0 0 8px;overflow-x:auto;padding:2px 0 4px}
+.progress button {font-size:14px;line-height:1.35;min-height:52px;padding:5px 4px;border:1.5px solid #91a89c;border-radius:4px;font-weight:600}
+.progress button span {font-size:14px;margin:0 0 1px;line-height:1.2}
+.progress button[aria-current=step] {border-color:#0e5149}
+.draft-bar {padding:6px 10px;margin-bottom:10px;gap:14px;border:1.5px solid #94aaa0;border-radius:4px;min-height:48px}
+.draft-bar strong {font-size:15px;color:#23483a}
+.draft-bar [role=status] {font-size:14px;color:#344f43;margin-left:auto}
+.draft-bar button {padding:6px 12px;min-height:36px;font-size:14px}
+.step {min-height:0}
+.step>p.muted {margin:4px 0 12px;font-size:14px}
+.field-grid {margin-top:14px;gap:16px 24px;max-width:none}
+.field label {margin-bottom:4px;color:#263f34;font-weight:650}
+input:not([type=checkbox]),select,textarea {border:1.5px solid #7e978a;border-radius:4px;padding:8px 10px;color:#1c3429}
+button,.button {border:1.5px solid #8ba296;border-radius:4px;font-weight:600;padding:8px 14px;min-height:40px}
+button:disabled {opacity:1;background:#edf0ee;color:#7b867f;border-color:#c6cec9;cursor:default}
+.duration {margin-top:16px;padding:10px 12px}
+.repeat-row {margin-bottom:8px}
+.repeat-field legend,.checkbox-field legend {margin-bottom:6px}
+.table-wrap {border:1px solid var(--line);border-radius:4px}
+th {font-size:14px;font-weight:650;color:#304b3d;background:#edf3ef}
+td,th {padding:11px 14px;border-bottom:1px solid #a7b8ae}
+tbody tr:last-child td {border-bottom:0}
+tbody tr:nth-child(even) {background:#f7faf8}
+td:last-child a {display:inline-block;padding:6px 10px;border:1px solid #91aa9c;border-radius:4px;white-space:nowrap;font-size:14px;font-weight:600;background:white;text-decoration:none}
+.draft-badge {color:#684a14;background:#fff2ce;border-color:#bca66d}
+.diagram-workspace-item {padding:14px;margin:12px 0 18px;border:1.5px solid #8da699;border-radius:6px;scroll-margin-top:65px;min-width:0}
+.diagram-workspace-item h3 {font-size:18px;margin:0 0 8px}
+.procedure-reference {display:flex;flex-wrap:wrap;align-items:baseline;gap:3px 14px;padding:7px 10px;margin:0 0 10px;font-size:14px;border-left:3px solid #709782;line-height:1.5}
+.procedure-reference p {margin:0}
+.procedure-reference strong {font-size:13px}
+.procedure-reference small {font-size:13px}
+.figure-workspace {display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:12px;align-items:start}
+.figure-controls {min-width:0;border:3px solid #6d8879;border-radius:5px;padding:10px;background:#f5f8f6;max-height:72vh;overflow:auto;overscroll-behavior:contain}
+.workspace-tools {display:grid;grid-template-columns:1fr;gap:10px;margin:0}
+.tool-group {padding:0 0 10px;border:0;border-bottom:1px solid #b2c3b8;border-radius:0;background:transparent}
+.tool-group:last-child {grid-column:auto;padding-bottom:0;border:0}
+.tool-group h4 {margin:0 0 6px;font-size:14px;font-weight:700}
+.tools button,.object-actions button {min-height:40px;font-size:14px;padding:6px 8px}
+.tool-group .tools {display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.object-actions {gap:5px}
+.pen-options {gap:8px;margin-top:6px;flex-wrap:nowrap}
+.pen-options label {min-width:0;flex:1;font-size:14px}
+.guide-toggle {margin:0;font-size:14px;min-height:28px}
+#diagram-editor .tool-help {font-size:13px;line-height:1.55;margin:10px 0 0}
+#diagram-editor .canvas-wrap {border:3px solid #6d8879;border-radius:4px;background:white}
+#diagram-editor .canvas-wrap .drawing-canvas {max-height:72vh}
+.object-inspector {grid-template-columns:1fr;gap:8px;padding:10px 0 0;margin:10px 0 0;border:0;border-top:1px solid #a8bcae;border-radius:0;background:transparent}
+.object-inspector label {font-size:14px;gap:3px}
+.diagram-picker,.choice-card,.diagram-card {border-radius:6px}
+.diagram-notice {margin:10px 0;font-size:13px}
+.delete-diagram {font-size:14px;margin-top:8px}
+footer {padding:12px}
+@media(min-width:1440px){.figure-workspace{grid-template-columns:minmax(0,1fr) 290px}}
+@media(max-width:1000px){.figure-workspace{grid-template-columns:1fr}.figure-controls{max-height:none;overflow:visible}.workspace-tools{grid-template-columns:1fr 1fr}.tool-group{border-bottom:0}.object-inspector{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){main{padding:12px}.site-header{padding:8px 12px;flex-wrap:wrap}.site-header>.badge{display:inline-block}.privacy{padding:6px 12px}.privacy span{margin:2px 0 0}.page-heading{gap:6px}.card{padding:14px}.draft-bar{flex-wrap:wrap;gap:6px}.draft-bar strong{flex-basis:100%}.draft-bar [role=status]{margin-left:0;flex:1;font-size:13px}.workspace-tools,.object-inspector{grid-template-columns:1fr}.field-grid{gap:14px}.diagram-workspace-item{padding:10px}.progress button{font-size:14px}}

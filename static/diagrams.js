@@ -254,7 +254,12 @@ class DiagramCanvas {
     const actions=element('div',undefined,'object-actions');
     this.undoButton=button('↶ Undo',()=>this.travel('undo','redo'),actions);this.redoButton=button('↷ Redo',()=>this.travel('redo','undo'),actions);
     this.deleteButton=button('選択を削除',()=>this.remove(),actions);const editing=element('section',undefined,'tool-group');editing.append(element('h4','編集'),actions);toolGroups.append(editing);
-    this.inspector=element('div',undefined,'object-inspector');this.parent.append(this.inspector);
+    const workspace=element('div',undefined,'figure-workspace'),panel=element('aside',undefined,'figure-controls');
+    panel.setAttribute('aria-label',`${title(this.diagram)}の操作`);
+    this.parent.append(workspace);workspace.append(wrap,panel);panel.append(toolGroups);
+    const display=element('section',undefined,'tool-group');display.append(element('h4','表示'),guideRow);toolGroups.append(display);
+    panel.append(this.help);
+    this.inspector=element('div',undefined,'object-inspector');panel.append(this.inspector);
     this.svg.addEventListener('pointerdown',e=>this.pointerDown(e));this.svg.addEventListener('pointermove',e=>this.pointerMove(e));this.svg.addEventListener('pointerup',e=>this.pointerUp(e));this.svg.addEventListener('pointercancel',()=>this.cancelGesture());this.svg.addEventListener('keydown',e=>this.keyDown(e));
     this.refresh();
   }

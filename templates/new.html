@@ -4,8 +4,8 @@
 {% block content %}
 <div class="page-heading compact"><div><p class="eyebrow">OPERATIVE NOTE / DRAFT</p><h1>{{ '下書きの再開' if editor_state.id else '新規手術記録' }}</h1></div><a href="{{ url_for('index') }}">症例一覧へ</a></div>
 <nav class="progress" aria-label="入力ステップ">{% for title, help, fields in steps %}<button type="button" data-step="{{ loop.index0 }}"><span>{{ '%02d'|format(loop.index) }}</span>{{ title }}</button>{% endfor %}</nav>
-<div class="step-meta"><span id="step-count"></span><span>入力内容は下書きとして自動保存されます</span></div>
-<div class="draft-bar"><span id="save-status" role="status">入力を待っています</span><button type="button" id="save-draft" form="note-form">下書き保存</button></div>
+
+<div class="draft-bar"><strong id="step-count"></strong><span id="save-status" role="status">入力を待っています</span><button type="button" id="save-draft" form="note-form">下書き保存</button></div>
 <form id="note-form" novalidate>
 {% for title, help, fields in steps %}
 <section class="card step" data-panel="{{ loop.index0 }}" {% if not loop.first %}hidden{% endif %}>

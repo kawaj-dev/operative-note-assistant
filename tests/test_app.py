@@ -222,7 +222,9 @@ def test_new_step_layout(client):
     assert '術式詳細' in panels[3] and '合併切除' in panels[5] and '出血' in panels[6]
     assert 'hemostasis' not in page and 'drain' not in page
     assert 'name="blood_loss"' in panels[6] and 'name="start_time"' not in panels[6]
-    assert '入力内容は下書きとして自動保存されます' in page
+    status_bar = re.search(r'<div class="draft-bar">(.*?)</div>', page, re.S).group(1)
+    assert all(f'id="{name}"' in status_bar for name in ('step-count', 'save-status', 'save-draft'))
+    assert 'role="status"' in status_bar
     assert 'save-draft' in page
     index = client.get('/').text
     assert 'OPERATIVE NOTES' not in index and 'ガイド型入力・自由記載・手術図で' not in index
