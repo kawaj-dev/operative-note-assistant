@@ -49,7 +49,7 @@ def validate_payload(payload, status="completed"):
             continue
         value = raw.get(f["name"], "")
         require(isinstance(value, str) and len(value) <= (10000 if f["name"] == "narrative" else 4000 if f["kind"] == "textarea" else 200), f'{f["label"]}の型または長さが不正です。')
-        value = value if f["name"] in ("narrative", "findings", "course") else value.strip()
+        value = value if f["name"] in ("narrative", "findings", "course", "combined_detail") else value.strip()
         require(not f["options"] or not value or value in f["options"], f'{f["label"]}の選択肢が不正です。')
         note[f["name"]] = value
     if not raw.get("narrative") and (raw.get("findings") or raw.get("course")):
@@ -72,7 +72,7 @@ def validate_payload(payload, status="completed"):
         # Preserve conditional work while drafting; omit inactive values on completion.
         for f in FIELDS + LEGACY_NARRATIVE_FIELDS:
             if not field_visible(f, note):
-                note[f["name"]] = [] if f["kind"] == "checks" else ""
+                note[f["name"]] = [] if f["kind"] in ("repeat", "checks") else ""
     validate_diagrams(payload["diagrams"], note["position"])
     return note, payload["diagrams"]
 

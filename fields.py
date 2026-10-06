@@ -11,6 +11,7 @@ LOBECTOMY = "肺葉切除術（Lobectomy）"
 SEGMENTECTOMY = "区域切除術（Segmentectomy）"
 PROCEDURES = [LOBECTOMY, SEGMENTECTOMY, "部分切除術 / 楔状切除術（Wedge Resection）", "肺全摘術（Pneumonectomy）", OTHER]
 STATIONS = ["#2R　上気管傍リンパ節", "#4R　下気管傍リンパ節", "#7　気管分岐下リンパ節", "#10　肺門リンパ節", "#11　葉間リンパ節", "#12　区域間リンパ節", "#13　亜区域間リンパ節"]
+COMBINED_RESECTION_SITES = ["胸壁", "心膜", "横隔膜", "大血管", "心臓", "気管", "食道", "椎体", "その他"]
 STEPS = [
     ("基本情報", "この記録は完全架空のデモ症例です。必須項目は * で示しています。", [
         field("case_id", "症例ID", required=True),
@@ -49,9 +50,10 @@ STEPS = [
         field("lymph_stations", "郭清・摘出リンパ節", "checks", STATIONS, when={"lymph_done": "あり"}),
         field("lymph_note", "郭清の補足", "textarea", when={"lymph_done": "あり"}),
     ]),
-    ("合併切除", "合併切除がある場合に、箇所を自由記載します。", [
+    ("合併切除", "合併切除がある場合に、切除部位と詳細を記録します。", [
         field("combined_done", "合併切除の有無", "select", ["あり", "なし"]),
-        field("combined_site", "合併切除箇所", "textarea", when={"combined_done": "あり"}),
+        field("combined_sites", "切除部位", "repeat", COMBINED_RESECTION_SITES, when={"combined_done": "あり"}),
+        field("combined_detail", "その他・詳細", "textarea", when={"combined_done": "あり"}),
     ]),
     ("出血", "出血量と輸血を記録します。", [
         field("blood_loss", "出血量（mL）", "number"),
@@ -82,6 +84,10 @@ def merge_narrative(data):
 def normalize_note(data):
     """Read legacy completed records without rewriting or discarding their contents."""
     note = {**blank_note(), **data}
+    if "combined_sites" not in data:
+        note["combined_sites"] = []
+    if "combined_detail" not in data:
+        note["combined_detail"] = data.get("combined_site", "")
     if "narrative" not in data:
         note["narrative"] = merge_narrative(data)
     for name in ("surgeon", "assistant"):

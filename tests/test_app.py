@@ -248,11 +248,11 @@ def test_blank_drafts_and_listing(client, app):
 def test_multiple_people_stations_round_trip(client, app):
     from fields import STATIONS
     payload = demo_payload()
-    payload['note'].update(surgeon=['架空術者A', '架空術者B'], assistant=['架空助手B', '架空助手A'], lymph_done='あり', lymph_grade='ND2a-1', lymph_stations=[STATIONS[0], STATIONS[2]], combined_done='あり', combined_site='架空の記録用箇所')
+    payload['note'].update(surgeon=['架空術者A', '架空術者B'], assistant=['架空助手B', '架空助手A'], lymph_done='あり', lymph_grade='ND2a-1', lymph_stations=[STATIONS[0], STATIONS[2]], combined_done='あり', combined_sites=['胸壁', '心膜'], combined_detail='架空の記録用箇所')
     response = save(client, payload)
     assert response.status_code == 201
     row, note = stored(app, response.json['id'])
-    for name in ('surgeon', 'assistant', 'lymph_stations'):
+    for name in ('surgeon', 'assistant', 'lymph_stations', 'combined_sites', 'combined_detail'):
         assert note[name] == payload['note'][name]
     html = client.get(response.json['url']).text
     assert '架空術者A、架空術者B' in html and '架空助手B、架空助手A' in html
@@ -380,18 +380,20 @@ def test_other_fields(client, app, selector, extra):
 def test_conditional_draft_retains_completed_clears(client, app):
     from fields import STATIONS
     payload = {**demo_payload(), 'status': 'draft'}
-    payload['note'].update(lymph_done='なし', lymph_grade='ND1a', lymph_stations=[STATIONS[0]], lymph_note='切替前の下書き', combined_done='なし', combined_site='切替前の箇所')
+    payload['note'].update(lymph_done='なし', lymph_grade='ND1a', lymph_stations=[STATIONS[0]], lymph_note='切替前の下書き', combined_done='なし', combined_sites=['胸壁', '心膜'], combined_detail='切替前の箇所')
     response = save(client, payload)
     note_id = response.json['id']
     assert stored(app, note_id)[1]['lymph_stations'] == [STATIONS[0]]
     html = client.get(response.json['url']).text
     assert '切替前の下書き' in html
+    assert stored(app, note_id)[1]['combined_sites'] == ['胸壁', '心膜']
+    assert stored(app, note_id)[1]['combined_detail'] == '切替前の箇所'
     payload['status'] = 'completed'
     assert update(client, note_id, payload, 1).status_code == 200
     note = stored(app, note_id)[1]
-    assert note['lymph_stations'] == [] and note['lymph_note'] == '' and note['combined_site'] == ''
+    assert note['lymph_stations'] == [] and note['lymph_note'] == '' and note['combined_sites'] == [] and note['combined_detail'] == ''
     html = client.get(f'/notes/{note_id}').text
-    assert '郭清度' not in html and '合併切除箇所' not in html
+    assert '郭清度' not in html and 'その他・詳細' not in html
 
 
 def test_update_requires_csrf_and_valid_revision(client):
@@ -436,3 +438,63 @@ def test_legacy_schema_migration_preserves_all_data(tmp_path):
     html = app.test_client().get('/notes/7').text
     assert '架空助手A、架空助手B' in html and '旧ドレーン記載' in html and '旧範囲' in html
     assert '150 分' in html
+
+
+@pytest.mark.parametrize('value', [['未許可の部位'], ['胸壁', '胸壁'], '胸壁', None, {}, [True]])
+def test_combined_sites_invalid(client, value):
+    payload = demo_payload()
+    payload['note'].update(combined_done='あり', combined_sites=value)
+    assert save(client, payload).status_code == 400
+
+
+def test_combined_fields_use_generic_controls(client):
+    from fields import COMBINED_RESECTION_SITES, STEPS
+    fields = STEPS[5][2]
+    assert [f['name'] for f in fields] == ['combined_done', 'combined_sites', 'combined_detail']
+    assert fields[1]['kind'] == 'repeat' and fields[1]['options'] == COMBINED_RESECTION_SITES
+    assert all(f['when'] == {'combined_done': 'あり'} for f in fields[1:])
+    page = client.get('/notes/new').text
+    assert 'id="combined_sites-rows"' in page and 'data-add="combined_sites"' in page
+    assert 'name="combined_detail"' in page and 'name="combined_site"' not in page
+
+
+@pytest.mark.parametrize('status', ['draft', 'completed'])
+def test_legacy_combined_text_read_without_db_rewrite(client, app, status):
+    from fields import FIELDS, normalize_note
+    payload = {**demo_payload(), 'status': status}
+    payload['note']['combined_done'] = 'あり'
+    response = save(client, payload)
+    note_id = response.json['id']
+    row, data = stored(app, note_id)
+    data.pop('combined_sites')
+    data.pop('combined_detail')
+    legacy = '  胸壁の一部を切除\n完全架空の記録  '
+    data['combined_site'] = legacy
+    raw = json.dumps(data, ensure_ascii=False)
+    with app.app_context():
+        db = get_db()
+        db.execute('UPDATE operative_notes SET data_json=? WHERE id=?', (raw, note_id))
+        db.commit()
+    normalized = normalize_note(data)
+    assert normalized['combined_detail'] == legacy
+    assert normalized['combined_sites'] == []  # Never infer sites from prose.
+    assert 'combined_detail' not in data
+    page = client.get(response.json['url']).text
+    assert legacy in page
+    current, _ = stored(app, note_id)
+    assert current['data_json'] == raw and current['revision'] == row['revision']
+    if status == 'draft':
+        payload['note'] = {f['name']: normalized[f['name']] for f in FIELDS}
+        assert update(client, note_id, payload, row['revision']).status_code == 200
+        saved = stored(app, note_id)[1]
+        assert saved['combined_detail'] == legacy and saved['combined_sites'] == []
+        assert 'combined_site' not in saved
+
+
+@pytest.mark.parametrize('detail', ['', '新しい詳細'])
+def test_combined_new_detail_takes_precedence(detail):
+    from fields import normalize_note
+    data = {'combined_site': '旧文章', 'combined_detail': detail, 'combined_sites': ['心膜']}
+    normalized = normalize_note(data)
+    assert normalized['combined_detail'] == detail
+    assert normalized['combined_sites'] == ['心膜']
