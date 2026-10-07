@@ -135,7 +135,7 @@ function showStep(index, remember = true) {
   document.querySelector('#save').hidden = index !== 9;
   if (index === 7) { editor.updateReference(); editor.refresh(); }
   if (index === 9) review();
-  panels[index].querySelector('h2').focus({preventScroll: true});
+  document.querySelector('#step-count').focus({preventScroll: true});
   if (remember && (state.id || version > 0)) markDirty();
 }
 function review() {
