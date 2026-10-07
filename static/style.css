@@ -107,15 +107,35 @@ h3 {font-weight:650;color:#203f34}
 .eyebrow {font-size:12px;letter-spacing:1px;margin:0 0 2px}
 .card {padding:18px 20px;border:1.5px solid var(--line);border-radius:6px;margin-bottom:14px}
 .progress {grid-template-columns:repeat(10,minmax(100px,1fr));gap:4px;margin:0 0 8px;overflow-x:auto;padding:2px 0 4px}
-.progress button {font-size:14px;line-height:1.35;min-height:52px;padding:5px 4px;border:1.5px solid #91a89c;border-radius:4px;font-weight:600}
+.progress button {font-size:14px;line-height:1.35;min-height:48px;padding:3px 4px;border:1.5px solid #91a89c;border-radius:4px;font-weight:600}
 .progress button span {font-size:14px;margin:0 0 1px;line-height:1.2}
 .progress button[aria-current=step] {border-color:#0e5149}
 .draft-bar {padding:6px 10px;margin-bottom:10px;gap:14px;border:1.5px solid #94aaa0;border-radius:4px;min-height:48px}
 .draft-bar strong {font-size:15px;color:#23483a}
 .draft-bar [role=status] {font-size:14px;color:#344f43;margin-left:auto}
 .draft-bar button {padding:6px 12px;min-height:36px;font-size:14px}
+/* The editor title is secondary to the single current-step heading. */
+.editor-heading {display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+.editor-heading h1 {font-size:25px;font-weight:750;line-height:1.3}
+@media(min-width:601px){
+  #note-form .step:not([data-panel="7"]) {padding:6px 18px;margin-bottom:6px}
+  #note-form .step:not([data-panel="7"])>.field-grid {margin-top:0;row-gap:6px}
+  #note-form .field label {margin-bottom:2px;line-height:1.3}
+  #note-form .field input:not([type=checkbox]),#note-form .field select {padding:4px 10px;font-size:16px;line-height:1.4;min-height:34px}
+  #note-form .duration {display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 12px;padding:3px 10px;margin-top:4px}
+  #note-form .duration output {margin-left:0}
+  #note-form .duration small {display:inline}
+  #note-form .field small {display:block;line-height:1.35;margin-top:2px}
+  #note-form .step:not([data-panel="7"])>p.muted {margin:0 0 4px;line-height:1.4}
+  .editor-heading+.progress {margin-bottom:4px;padding-bottom:2px}
+  .editor-heading+.progress+.draft-bar {padding:3px 10px;min-height:42px;margin-bottom:6px}
+  #note-form .form-navigation {margin:0;gap:10px}
+  #note-form .repeat-row {margin-bottom:6px;row-gap:4px}
+  #note-form .repeat-field legend,#note-form .checkbox-field legend {margin-bottom:4px}
+  #note-form .field .check-option {padding:6px 0}
+}
 .step {min-height:0}
-.step>p.muted {margin:4px 0 12px;font-size:14px}
+.step>p.muted {margin:0 0 10px;font-size:14px}
 .field-grid {margin-top:14px;gap:16px 24px;max-width:none}
 .field label {margin-bottom:4px;color:#263f34;font-weight:650}
 input:not([type=checkbox]),select,textarea {border:1.5px solid #7e978a;border-radius:4px;padding:8px 10px;color:#1c3429}
