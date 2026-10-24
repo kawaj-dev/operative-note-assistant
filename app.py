@@ -1,6 +1,7 @@
 import json
 import secrets
 import sqlite3
+from datetime import date
 from pathlib import Path
 
 import click
@@ -8,7 +9,7 @@ from flask import Flask, abort, jsonify, redirect, render_template, request, ses
 from werkzeug.exceptions import BadRequest, RequestEntityTooLarge
 
 from db import SaveConflict, close_db, get_db, init_db, load_diagrams, save_note
-from fields import DIAGRAMS, OBJECT_LAYERS, STEPS, LEGACY_FIELDS, blank_note, demo_payload, display_value, field_visible, normalize_note
+from fields import DIAGRAMS, OBJECT_LAYERS, STEPS, LEGACY_FIELDS, PROCEDURES, blank_note, demo_payload, display_value, field_visible, normalize_note
 from validation import ValidationError, validate_payload
 from diagram_specs import TEMPLATES, GUIDES
 
@@ -37,13 +38,47 @@ def create_app(test_config=None):
 
     @app.get("/")
     def index():
+        filters = {name: request.args.get(name, "").strip() for name in ("case_id", "operation_date", "procedure", "status")}
+        errors = []
+        if any(len(request.args.getlist(name)) > 1 for name in filters):
+            errors.append("同じ検索条件を複数指定しないでください。")
+        if len(filters["case_id"]) > 100 or any(ord(c) < 32 for c in filters["case_id"]):
+            errors.append("症例IDの検索文字列は制御文字を含まない100文字以内で入力してください。")
+        if filters["operation_date"]:
+            try:
+                if date.fromisoformat(filters["operation_date"]).isoformat() != filters["operation_date"]:
+                    raise ValueError
+            except ValueError:
+                errors.append("手術日は有効な日付（YYYY-MM-DD）で指定してください。")
+        if filters["procedure"] and filters["procedure"] not in PROCEDURES:
+            errors.append("術式は選択肢から指定してください。")
+        if filters["status"] not in ("", "draft", "completed"):
+            errors.append("保存状態はすべて・下書き・完成から指定してください。")
         notes = []
-        for row in get_db().execute("SELECT * FROM operative_notes ORDER BY updated_at DESC, id DESC"):
+        clauses, parameters = [], []
+        if filters["case_id"]:
+            # instr treats %, _ and quotes as literal text, not SQL patterns.
+            clauses.append("instr(lower(case_id), lower(?)) > 0")
+            parameters.append(filters["case_id"])
+        for name in ("operation_date", "status"):
+            if filters[name]:
+                clauses.append(f"{name} = ?")
+                parameters.append(filters[name])
+        sql = "SELECT * FROM operative_notes"
+        if clauses:
+            sql += " WHERE " + " AND ".join(clauses)
+        sql += " ORDER BY updated_at DESC, id DESC"
+        rows = [] if errors else get_db().execute(sql, parameters)
+        for row in rows:
             item = dict(row)
             data = normalize_note(json.loads(row["data_json"]))
+            # Use the same legacy normalization as the editor and detail view.
+            if filters["procedure"] and data["procedure"] != filters["procedure"]:
+                continue
             item["procedure"] = data["procedure_other"] if data["procedure"] == "その他（自由入力）" else data["procedure"]
             notes.append(item)
-        return render_template("index.html", notes=notes)
+        return render_template("index.html", notes=notes, filters=filters, procedures=PROCEDURES,
+                               errors=errors, searching=any(filters.values())), 400 if errors else 200
 
     @app.get("/notes/new")
     def new_note():
