@@ -181,3 +181,7 @@ footer {padding:12px}
 @media(min-width:1440px){.figure-workspace{grid-template-columns:minmax(0,1fr) 290px}}
 @media(max-width:1000px){.figure-workspace{grid-template-columns:1fr}.figure-controls{max-height:none;overflow:visible}.workspace-tools{grid-template-columns:1fr 1fr}.tool-group{border-bottom:0}.object-inspector{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){main{padding:12px}.site-header{padding:8px 12px;flex-wrap:wrap}.site-header>.badge{display:inline-block}.privacy{padding:6px 12px}.privacy span{margin:2px 0 0}.page-heading{gap:6px}.card{padding:14px}.draft-bar{flex-wrap:wrap;gap:6px}.draft-bar strong{flex-basis:100%}.draft-bar [role=status]{margin-left:0;flex:1;font-size:13px}.workspace-tools,.object-inspector{grid-template-columns:1fr}.field-grid{gap:14px}.diagram-workspace-item{padding:10px}.progress button{font-size:14px}}
+
+/* List search reuses the responsive two-column field grid. */
+.search-form .field-grid {margin-top:0}
+.search-actions {display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}

@@ -498,3 +498,89 @@ def test_combined_new_detail_takes_precedence(detail):
     normalized = normalize_note(data)
     assert normalized['combined_detail'] == detail
     assert normalized['combined_sites'] == ['心膜']
+
+
+@pytest.fixture
+def search_notes(app):
+    from db import save_note
+    from fields import blank_note, LOBECTOMY, SEGMENTECTOMY, OTHER
+    with app.app_context():
+        ids = []
+        for case_id, day, procedure, status in [
+            ('DEMO-101', '2026-01-01', LOBECTOMY, 'completed'),
+            ('DEMO-102', '2026-01-02', SEGMENTECTOMY, 'draft'),
+            ('DEMO-103', '2026-01-01', OTHER, 'completed'),
+            ('', '', '', 'draft'),
+            ('DEMO-104', '2026-01-01', '右上葉切除術', 'completed'),
+        ]:
+            note = blank_note()
+            note.update(case_id=case_id, operation_date=day, procedure=procedure,
+                        procedure_other='架空の自由記載術式')
+            ids.append(save_note(note, [], status)['id'])
+        get_db().execute("UPDATE operative_notes SET updated_at = '2026-01-01T00:00:00+00:00'")
+        get_db().execute("UPDATE operative_notes SET updated_at = '2026-01-02T00:00:00+00:00' WHERE id = ?", (ids[0],))
+        get_db().commit()
+    return ids
+
+
+@pytest.mark.parametrize('query,expected', [
+    ({}, ['DEMO-101', 'DEMO-104', '症例ID未入力', 'DEMO-103', 'DEMO-102']),
+    ({'case_id': 'dEmO-10'}, ['DEMO-101', 'DEMO-104', 'DEMO-103', 'DEMO-102']),
+    ({'case_id': '02'}, ['DEMO-102']),
+    ({'operation_date': '2026-01-01'}, ['DEMO-101', 'DEMO-104', 'DEMO-103']),
+    ({'procedure': '肺葉切除術（Lobectomy）'}, ['DEMO-101', 'DEMO-104']),
+    ({'procedure': '区域切除術（Segmentectomy）'}, ['DEMO-102']),
+    ({'procedure': 'その他（自由入力）'}, ['DEMO-103']),
+    ({'status': 'draft'}, ['症例ID未入力', 'DEMO-102']),
+    ({'status': 'completed'}, ['DEMO-101', 'DEMO-104', 'DEMO-103']),
+    ({'case_id': '10', 'operation_date': '2026-01-01', 'procedure': '肺葉切除術（Lobectomy）', 'status': 'completed'}, ['DEMO-101', 'DEMO-104']),
+    ({'operation_date': '2026-01-01', 'status': 'draft'}, []),
+    ({'case_id': '%'}, []),
+    ({'case_id': '_'}, []),
+    ({'case_id': "' OR 1=1 --"}, []),
+    ({'case_id': ' 102 ', 'status': ' draft '}, ['DEMO-102']),
+    ({'case_id': '', 'operation_date': '', 'procedure': '', 'status': ''}, ['DEMO-101', 'DEMO-104', '症例ID未入力', 'DEMO-103', 'DEMO-102']),
+])
+def test_list_search(client, app, search_notes, query, expected):
+    with app.app_context():
+        before = [tuple(row) for row in get_db().execute('SELECT * FROM operative_notes ORDER BY id')]
+    response = client.get('/', query_string=query)
+    assert response.status_code == 200
+    assert re.findall(r'<td><strong>(.*?)</strong>', response.text) == expected
+    if any(value.strip() for value in query.values()):
+        assert f'検索結果：{len(expected)} 件' in response.text
+    if not expected:
+        assert '条件に一致する症例はありません' in response.text
+    with app.app_context():
+        assert [tuple(row) for row in get_db().execute('SELECT * FROM operative_notes ORDER BY id')] == before
+
+
+@pytest.mark.parametrize('query', [
+    {'case_id': 'x' * 101}, {'case_id': 'DEMO\x00'},
+    {'operation_date': '2026-02-30'}, {'operation_date': '20260101'},
+    {'operation_date': "2026-01-01' OR 1=1"},
+    {'procedure': '未許可'}, {'status': 'published'},
+    [('status', 'draft'), ('status', 'completed')],
+])
+def test_invalid_list_search(client, search_notes, query):
+    response = client.get('/', query_string=query)
+    assert response.status_code == 400
+    assert 'role="alert"' in response.text
+    assert '<tbody>' not in response.text
+
+
+def test_search_form_preserves_conditions_and_escapes(client, search_notes):
+    from fields import PROCEDURES
+    from markupsafe import escape
+    query = dict(case_id='demo-10', operation_date='2026-01-01', procedure=PROCEDURES[0], status='completed')
+    page = client.get('/', query_string=query).text
+    assert 'method="get"' in page and 'role="search"' in page
+    assert 'value="demo-10"' in page and 'value="2026-01-01"' in page
+    assert f'value="{PROCEDURES[0]}" selected' in page
+    assert 'value="completed" selected' in page
+    assert 'href="/">クリア</a>' in page
+    assert all(f'value="{procedure}"' in page for procedure in PROCEDURES)
+    attack = '<script>alert(1)</script>'
+    page = client.get('/', query_string={'case_id': attack}).text
+    assert attack not in page and str(escape(attack)) in page
+    assert len(re.findall(r'<td><strong>', client.get('/').text)) == 5
