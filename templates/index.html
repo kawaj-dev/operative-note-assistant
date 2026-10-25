@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="page-heading compact"><div><h1>症例一覧</h1><span class="muted">{% if errors %}検索条件を確認してください{% elif searching %}検索結果：{{ notes|length }} 件{% else %}{{ notes|length }} 件の架空症例{% endif %}</span></div><a class="button primary" href="{{ url_for('new_note') }}">＋ 新規記録を作成</a></div>
+<div class="page-heading compact"><div><h1>症例一覧</h1></div><a class="button primary" href="{{ url_for('new_note') }}">＋ 新規記録を作成</a></div>
 <form class="card search-form" method="get" action="{{ url_for('index') }}" role="search" aria-label="症例検索">
   <div class="field-grid">
     <div class="field"><label for="search-case-id">症例ID（部分一致）</label><input id="search-case-id" name="case_id" value="{{ filters.case_id }}" maxlength="100" placeholder="例：DEMO-001"></div>
@@ -8,7 +8,7 @@
     <div class="field"><label for="search-procedure">術式</label><select id="search-procedure" name="procedure"><option value="">すべて</option>{% if filters.procedure and filters.procedure not in procedures %}<option value="{{ filters.procedure }}" selected>無効な条件：{{ filters.procedure }}</option>{% endif %}{% for procedure in procedures %}<option value="{{ procedure }}" {% if filters.procedure == procedure %}selected{% endif %}>{{ procedure }}</option>{% endfor %}</select></div>
     <div class="field"><label for="search-status">保存状態</label><select id="search-status" name="status">{% if filters.status not in ['', 'draft', 'completed'] %}<option value="{{ filters.status }}" selected>無効な条件：{{ filters.status }}</option>{% endif %}{% for value, label in [('', 'すべて'), ('draft', '下書き'), ('completed', '完成')] %}<option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
   </div>
-  <div class="search-actions"><button class="primary" type="submit">検索</button><a class="button" href="{{ url_for('index') }}">クリア</a></div>
+  <div class="search-actions"><button class="primary" type="submit">検索</button><a class="button" href="{{ url_for('index') }}">クリア</a><span class="muted search-count">{% if errors %}検索条件を確認してください{% elif searching %}検索結果：{{ notes|length }} 件{% else %}{{ notes|length }} 件の架空症例{% endif %}</span></div>
 </form>
 {% if errors %}<div class="error" role="alert">{% for error in errors %}<p>{{ error }}</p>{% endfor %}</div>{% endif %}
 {% if not errors %}<section class="card">
