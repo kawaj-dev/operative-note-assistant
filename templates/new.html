@@ -26,7 +26,18 @@
   </div>{% endfor %}</div>
   {% if loop.index0 == 0 %}<div class="duration">手術時間 <output id="duration">開始・終了時刻を入力してください</output><small>終了が開始より前なら翌日として計算します（24時間未満）。同じ時刻は0分です。</small></div>{% endif %}
   {% if loop.index0 == 7 %}<div id="diagram-editor"></div>{% endif %}
-  {% if loop.index0 == 9 %}<div id="review"></div><label class="confirmation"><input type="checkbox" id="fiction-confirm">入力内容がすべて架空であることを確認しました。</label>{% endif %}
+  {% if loop.index0 == 9 %}
+  <div class="review-switch" role="group" aria-label="確認表示の切替">
+    <button type="button" data-review-view="review" aria-controls="review" aria-pressed="true">入力内容の確認</button>
+    <button type="button" data-review-view="print-preview" aria-controls="print-preview" aria-pressed="false">印刷プレビュー</button>
+  </div>
+  <div id="review"></div>
+  <div id="print-preview" hidden>
+    <p class="muted">現在の入力内容のプレビューです。印刷しても完成保存にはなりません。PDF保存は印刷ダイアログから選択できます。</p>
+    <button type="button" id="print-note">印刷</button>
+    <article id="print-document" aria-label="手術記録の印刷プレビュー"></article>
+  </div>
+  <label class="confirmation"><input type="checkbox" id="fiction-confirm">入力内容がすべて架空であることを確認しました。</label>{% endif %}
 </section>
 {% endfor %}
 <p id="form-error" class="error" role="alert" hidden></p>

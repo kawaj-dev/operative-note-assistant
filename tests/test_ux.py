@@ -145,3 +145,82 @@ def test_local_assets_only_and_no_new_dependencies(client):
     for file in ('static/diagrams.js','static/form.js'):
         assert not re.search(r'(?:fetch|import)\s*\(?\s*[\'\"]https?://',Path(file).read_text(encoding='utf-8'))
     assert 'dialog' in Path('static/diagrams.js').read_text(encoding='utf-8')
+
+
+def test_step10_print_controls(client):
+    page = client.get('/notes/new').text
+    panel = page.split('data-panel="9"')[1].split('</section>')[0]
+    assert 'id="review"' in panel and 'id="fiction-confirm"' in panel
+    assert 'data-review-view="review" aria-controls="review" aria-pressed="true"' in panel
+    assert 'data-review-view="print-preview"' in panel
+    assert 'type="button" id="print-note"' in panel
+    assert 'id="print-document"' in panel
+    assert 'type="submit" id="save"' in page
+
+
+def test_print_document_current_data_and_switch_without_mutation():
+    """Execute the production preview functions with a small in-memory DOM adapter."""
+    import shutil
+    import subprocess
+    from pathlib import Path
+    from fields import STEPS, blank_note
+    node = shutil.which('node')
+    if not node:
+        pytest.skip('Node is needed for the client-side preview test')
+    source = Path('static/form.js').read_text(encoding='utf-8')
+    functions = source[source.index('function printPreview()'):source.index("document.querySelectorAll('[data-review-view]').forEach(button => {\n  button.addEventListener")]
+    note = blank_note()
+    note.update(case_id='DEMO-901', operation_date='2026-01-01', blood_loss=0,
+                transfusion='なし', combined_done='なし', combined_detail='非表示の下書き値',
+                narrative='架空の所見\n二行目 <script>test</script>', surgeon=['架空術者A', ''])
+    script = r'''
+const assert = require('node:assert/strict');
+class Node {
+  constructor(tag, text, className) { this.tag=tag;this.text=text;this.className=className;this.children=[];this.hidden=false;this.attributes={}; }
+  append(...nodes){this.children.push(...nodes);}
+  prepend(...nodes){this.children.unshift(...nodes);}
+  replaceChildren(...nodes){this.children=[...nodes];}
+  setAttribute(key,value){this.attributes[key]=value;}
+}
+const element=(...args)=>new Node(...args);
+const nodes=Object.fromEntries(['#print-document','#review','#print-preview'].map(id=>[id,new Node('div')]));
+const buttons=['review','print-preview'].map(view=>{const b=new Node('button');b.dataset={reviewView:view};return b;});
+const document={querySelector:id=>nodes[id],querySelectorAll:()=>buttons};
+const noteData=()=>note;
+const visible=(field,note)=>Object.entries(field.when).every(([key,value])=>note[key]===value);
+const duration=()=>0;
+const editor={diagrams:[{id:'second-created',guide_visible:false},{id:'first-created',guide_visible:true}]};
+const renderSaved=(parent,diagrams)=>diagrams.forEach(d=>parent.append(element('svg',d.id)));
+
+''' + '\nconst steps=' + json.dumps(STEPS, ensure_ascii=False) + ';\nconst note=' + json.dumps(note, ensure_ascii=False) + ';\n' + functions + r'''
+const snapshot=JSON.stringify({note,diagrams:editor.diagrams});
+setReviewView('print-preview');
+function entries(node){return [node,...node.children.flatMap(entries)];}
+let all=entries(nodes['#print-document']);
+let texts=all.map(n=>n.text);
+assert(texts.includes(0));assert(texts.includes('0 分'));assert(texts.includes('なし'));
+assert(texts.includes('架空の所見\n二行目 <script>test</script>'));
+assert(!texts.includes('術後診断'));assert(!texts.includes('非表示の下書き値'));
+assert(texts.some(t=>typeof t==='string' && t.includes('学習用プロトタイプ')));
+assert.deepEqual(all.filter(n=>n.tag==='svg').map(n=>n.text),['second-created','first-created']);
+assert.equal(nodes['#review'].hidden,true);assert.equal(buttons[1].attributes['aria-pressed'],'true');
+setReviewView('review');
+assert.equal(nodes['#review'].hidden,false);assert.equal(nodes['#print-preview'].hidden,true);
+assert.equal(JSON.stringify({note,diagrams:editor.diagrams}),snapshot);
+note.narrative='変更後の架空所見';setReviewView('print-preview');
+assert(entries(nodes['#print-document']).some(n=>n.text==='変更後の架空所見'));
+'''
+    # These functions must not call any save/dirty APIs (the adapter provides none).
+    result = subprocess.run([node, '-e', script], capture_output=True, text=True, encoding='utf-8')
+    assert result.returncode == 0, result.stderr
+
+
+def test_print_css_and_native_print():
+    from pathlib import Path
+    css = Path('static/style.css').read_text(encoding='utf-8')
+    js = Path('static/form.js').read_text(encoding='utf-8')
+    assert '@page {size:A4 portrait;margin:15mm}' in css
+    assert '@media print' in css and 'break-inside:avoid' in css
+    assert 'body.printing-note #note-form> :not([data-panel="9"])' in css
+    assert 'window.print()' in js and "window.addEventListener('beforeprint'" in js
+    assert 'renderSaved(diagrams, editor.diagrams)' in js
