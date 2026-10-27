@@ -165,7 +165,65 @@ function review() {
   const diagrams = element('div');
   parent.append(element('h3', '手術図'), diagrams);
   renderSaved(diagrams, editor.diagrams);
+  printPreview();
 }
+function printPreview() {
+  const parent = document.querySelector('#print-document');
+  parent.replaceChildren(element('h1', '手術記録'));
+  const note = noteData();
+  // Reorder existing field groups only; labels and conditional rules stay shared.
+  const groups = [
+    steps[0][2].filter(field => !['start_time', 'end_time'].includes(field.name)),
+    steps[1][2], [...steps[3][2], ...steps[2][2]],
+    [...steps[4][2], ...steps[5][2]],
+    [...steps[0][2].filter(field => ['start_time', 'end_time'].includes(field.name)), ...steps[6][2]],
+    steps[8][2],
+  ];
+  groups.forEach((items, index) => {
+    const list = element('dl', undefined, 'print-fields');
+    for (const field of items.filter(field => visible(field, note))) {
+      const value = note[field.name];
+      const text = Array.isArray(value) ? value.filter(v => v !== '').join('、') : value;
+      if (text === '' || text === null || text === undefined) continue;
+      const row = element('div', undefined, field.kind === 'textarea' ? 'wide' : undefined);
+      row.append(element('dt', field.label), element('dd', text));
+      list.append(row);
+    }
+    if (index === 4 && duration() !== null) {
+      const row = element('div');
+      row.append(element('dt', '手術時間'), element('dd', `${duration()} 分`));
+      list.prepend(row);
+    }
+    if (list.children.length) parent.append(list);
+  });
+  if (editor.diagrams.length) {
+    const diagrams = element('div');
+    parent.append(element('h2', '手術図'), diagrams);
+    renderSaved(diagrams, editor.diagrams);
+  }
+  parent.append(element('p', '架空症例・学習用プロトタイプの手術記録です。実際の診療には使用できません。', 'print-notice'));
+}
+function setReviewView(view) {
+  document.querySelector('#review').hidden = view !== 'review';
+  document.querySelector('#print-preview').hidden = view !== 'print-preview';
+  document.querySelectorAll('[data-review-view]').forEach(button => {
+    button.setAttribute('aria-pressed', String(button.dataset.reviewView === view));
+  });
+  if (view === 'print-preview') printPreview();
+}
+document.querySelectorAll('[data-review-view]').forEach(button => {
+  button.addEventListener('click', () => setReviewView(button.dataset.reviewView));
+});
+document.querySelector('#print-note').addEventListener('click', () => {
+  printPreview();
+  window.print();
+});
+window.addEventListener('beforeprint', () => {
+  if (current !== 9) return;
+  printPreview();
+  document.body.classList.add('printing-note');
+});
+window.addEventListener('afterprint', () => document.body.classList.remove('printing-note'));
 function savedTime(value) {
   const normalized = value.includes('T') ? value : value.replace(' ', 'T') + 'Z';
   return new Date(normalized).toLocaleTimeString('ja-JP', {hour: '2-digit', minute: '2-digit'});
