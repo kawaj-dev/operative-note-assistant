@@ -196,16 +196,17 @@ footer {padding:12px}
 .review-switch {display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 14px}
 .review-switch [aria-pressed=true] {background:var(--main);color:white;text-decoration:underline}
 #print-preview {background:var(--surface-muted);padding:12px;min-width:0}
-#print-document {box-sizing:border-box;width:210mm;max-width:100%;min-height:297mm;margin:12px auto 0;padding:16mm;background:white;color:#203831;border:1px solid var(--line);font-size:11pt;line-height:1.6;overflow-wrap:anywhere}
-#print-document h1 {font-size:20pt;text-align:center;margin:0 0 8mm}
-#print-document h2 {font-size:14pt;margin:6mm 0 3mm}
-.print-fields {display:grid;grid-template-columns:1fr 1fr;gap:3mm 6mm;margin:0 0 5mm}
-.print-fields dt {font-weight:700;font-size:10pt}
-.print-fields dd {margin:0;white-space:pre-wrap}
+#print-document {box-sizing:border-box;width:210mm;max-width:100%;min-height:297mm;margin:12px auto 0;padding:15mm;background:white;color:#203831;border:1px solid var(--line);font-size:10pt;line-height:1.4;overflow-wrap:anywhere}
+#print-document h1 {font-size:16pt;text-align:center;margin:0 0 5mm}
+#print-document h2,#print-document h3 {font-size:11pt;font-weight:700;margin:4mm 0 2mm}
+.print-fields {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5pt 6mm;margin:0 0 3mm}
+.print-fields dt {display:inline;font-weight:700;font-size:9pt}
+.print-fields dt::after {content:"："}
+.print-fields dd {display:inline;margin:0;font-size:10pt;white-space:pre-wrap}
 .print-fields>div {min-width:0}
-#print-document .saved-diagram {margin:4mm 0 6mm}
-#print-document .canvas-wrap {background:white}
-#print-document .drawing-canvas {width:100%;height:auto;aspect-ratio:8/5;pointer-events:none}
+#print-document .saved-diagram {margin:3mm 0 4mm}
+#print-document .canvas-wrap {background:white;border:0;border-radius:0}
+#print-document .drawing-canvas {width:100%;height:auto;aspect-ratio:8/5;max-height:240mm;pointer-events:none}
 .print-notice {border-top:1px solid var(--line);padding-top:3mm;font-size:10pt}
 @media(max-width:600px){#print-preview{padding:4px}#print-document{padding:16px;min-height:0}.print-fields{grid-template-columns:1fr}}
 @page {size:A4 portrait;margin:15mm}
@@ -216,10 +217,17 @@ footer {padding:12px}
   body.printing-note [data-panel="9"]> :not(#print-preview),
   body.printing-note #print-preview> :not(#print-document) {display:none!important}
   body.printing-note main,body.printing-note #note-form,body.printing-note [data-panel="9"],body.printing-note #print-preview {display:block!important;margin:0!important;padding:0!important;border:0!important;max-width:none;background:white}
-  body.printing-note #print-document {width:100%;max-width:none;min-height:0;margin:0;padding:0;border:0;font-size:11pt}
-  body.printing-note .print-fields {grid-template-columns:1fr 1fr}
+  body.printing-note #print-document {width:100%;max-width:none;min-height:0;margin:0;padding:0;border:0;font-size:10pt}
+  /* Block flow lets long text paginate independently of grid fragmentation. */
+  body.printing-note .print-fields {display:block;font-size:0}
+  body.printing-note .print-fields>div {font-size:10pt;margin-bottom:5pt;vertical-align:top}
+  body.printing-note .print-short-field {display:inline-block;width:50%;padding-right:3mm;box-sizing:border-box;break-inside:avoid;page-break-inside:avoid}
+
+  body.printing-note .print-long-field {display:block;width:100%;break-inside:auto;page-break-inside:auto}
   body.printing-note #print-document h1,body.printing-note #print-document h2,body.printing-note #print-document h3,body.printing-note dt {break-after:avoid}
   body.printing-note #print-document .canvas-wrap {break-inside:avoid;page-break-inside:avoid}
-  body.printing-note #print-document .saved-diagram {break-inside:avoid-page}
+  body.printing-note #print-document .saved-diagram {break-before:auto;break-inside:auto}
+  body.printing-note #print-document .diagram-summary {break-after:avoid}
+  body.printing-note #print-document .diagram-summary,body.printing-note #print-document .object-notes,body.printing-note #print-document .diagram-notice {font-size:9pt;line-height:1.4}
   body.printing-note #print-document p,body.printing-note #print-document dd {orphans:3;widows:3}
 }
