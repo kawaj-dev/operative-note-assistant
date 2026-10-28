@@ -172,7 +172,8 @@ def test_print_document_current_data_and_switch_without_mutation():
     note = blank_note()
     note.update(case_id='DEMO-901', operation_date='2026-01-01', blood_loss=0,
                 transfusion='なし', combined_done='なし', combined_detail='非表示の下書き値',
-                narrative='架空の所見\n二行目 <script>test</script>', surgeon=['架空術者A', ''])
+                narrative='架空の所見\n二行目 <script>test</script>', surgeon=['架空術者B', '架空術者A'], procedure='その他（自由入力）',
+                procedure_other='架空の長い術式説明' * 5)
     script = r'''
 const assert = require('node:assert/strict');
 class Node {
@@ -198,6 +199,12 @@ setReviewView('print-preview');
 function entries(node){return [node,...node.children.flatMap(entries)];}
 let all=entries(nodes['#print-document']);
 let texts=all.map(n=>n.text);
+const fieldRow=label=>all.find(n=>n.tag==='div' && n.children.some(c=>c.tag==='dt' && c.text===label));
+assert.equal(fieldRow('症例ID').className,'print-short-field');
+assert.equal(fieldRow('術者').className,'wide print-long-field');
+assert.equal(fieldRow('術者').children[1].text,'架空術者B、架空術者A');
+assert.equal(fieldRow('その他の術式').className,'wide print-long-field');
+assert.equal(fieldRow('手術所見・手術経過').className,'wide print-long-field');
 assert(texts.includes(0));assert(texts.includes('0 分'));assert(texts.includes('なし'));
 assert(texts.includes('架空の所見\n二行目 <script>test</script>'));
 assert(!texts.includes('術後診断'));assert(!texts.includes('非表示の下書き値'));
@@ -224,3 +231,19 @@ def test_print_css_and_native_print():
     assert 'body.printing-note #note-form> :not([data-panel="9"])' in css
     assert 'window.print()' in js and "window.addEventListener('beforeprint'" in js
     assert 'renderSaved(diagrams, editor.diagrams)' in js
+
+def test_compact_print_layout_and_pagination():
+    from pathlib import Path
+    css = Path('static/style.css').read_text(encoding='utf-8')
+    preview = css.split('/* Step 10 document preview;')[1]
+    assert '.print-fields dt {display:inline;' in preview
+    assert '.print-fields dd {display:inline;' in preview
+    assert 'font-size:16pt' in preview and 'font-size:9pt' in preview
+    assert 'gap:5pt 6mm' in preview
+    assert 'white-space:pre-wrap' in preview
+    assert '.print-long-field {display:block;width:100%;break-inside:auto' in preview
+    assert '.print-short-field {display:inline-block;' in preview
+    assert '.canvas-wrap {break-inside:avoid;page-break-inside:avoid}' in preview
+    assert '.saved-diagram {break-before:auto;break-inside:auto}' in preview
+    assert 'break-before:page' not in preview
+    assert 'height:auto;aspect-ratio:8/5' in preview

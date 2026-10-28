@@ -185,12 +185,15 @@ function printPreview() {
       const value = note[field.name];
       const text = Array.isArray(value) ? value.filter(v => v !== '').join('、') : value;
       if (text === '' || text === null || text === undefined) continue;
-      const row = element('div', undefined, field.kind === 'textarea' ? 'wide' : undefined);
+      const fullWidth = field.kind === 'textarea' || field.kind === 'checks'
+        || (Array.isArray(value) && value.filter(v => v !== '').length > 1)
+        || String(text).length > 24 || String(text).includes('\n');
+      const row = element('div', undefined, fullWidth ? 'wide print-long-field' : 'print-short-field');
       row.append(element('dt', field.label), element('dd', text));
       list.append(row);
     }
     if (index === 4 && duration() !== null) {
-      const row = element('div');
+      const row = element('div', undefined, 'print-short-field');
       row.append(element('dt', '手術時間'), element('dd', `${duration()} 分`));
       list.prepend(row);
     }
