@@ -236,13 +236,13 @@ def test_compact_print_layout_and_pagination():
     from pathlib import Path
     css = Path('static/style.css').read_text(encoding='utf-8')
     preview = css.split('/* Step 10 document preview;')[1]
-    assert '.print-fields dt {display:inline;' in preview
-    assert '.print-fields dd {display:inline;' in preview
+    assert '.print-fields dt {display:block;' in preview
+    assert '.print-fields dd {display:block;' in preview
     assert 'font-size:16pt' in preview and 'font-size:9pt' in preview
-    assert 'gap:5pt 6mm' in preview
+    assert 'border-right:1px solid #718f83' in preview
     assert 'white-space:pre-wrap' in preview
-    assert '.print-long-field {display:block;width:100%;break-inside:auto' in preview
-    assert '.print-short-field {display:inline-block;' in preview
+    assert '.print-long-field {display:block;width:100%;break-inside:avoid' in preview
+    assert '.print-short-field {display:inline-grid;' in preview
     assert '.canvas-wrap {break-inside:avoid;page-break-inside:avoid}' in preview
     assert '.saved-diagram {break-before:auto;break-inside:auto}' in preview
     assert 'break-before:page' not in preview

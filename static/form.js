@@ -146,16 +146,19 @@ function review() {
     if (!items.length) continue;
     const section = element('section', undefined, 'detail-section');
     section.append(element('h3', title));
-    const list = element('dl', undefined, 'record-grid');
+    const list = element('dl', undefined, 'print-fields');
     for (const field of items.filter(field => visible(field, note))) {
       const value = note[field.name];
       const text = Array.isArray(value) ? value.filter(Boolean).join('、') : value;
-      const row = element('div');
-      row.append(element('dt', field.label), element('dd', text || '未記録'));
+      const fullWidth = field.kind === 'textarea' || field.kind === 'checks'
+        || (Array.isArray(value) && value.filter(Boolean).length > 1)
+        || String(text).length > 24 || String(text).includes('\n');
+      const row = element('div', undefined, fullWidth ? 'wide print-long-field' : 'print-short-field');
+      row.append(element('dt', field.label), element('dd', text === '' ? '未記録' : text));
       list.append(row);
     }
     if (title === '基本情報') {
-      const row = element('div');
+      const row = element('div', undefined, 'print-short-field');
       row.append(element('dt', '手術時間'), element('dd', duration() === null ? '未記録' : `${duration()} 分`));
       list.append(row);
     }
