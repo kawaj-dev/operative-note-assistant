@@ -199,19 +199,20 @@ footer {padding:12px}
 #print-document {box-sizing:border-box;width:210mm;max-width:100%;min-height:297mm;margin:12px auto 0;padding:15mm;background:white;color:#203831;border:1px solid var(--line);font-size:10pt;line-height:1.4;overflow-wrap:anywhere}
 #print-document h1 {font-size:16pt;text-align:center;margin:0 0 5mm}
 #print-document h2,#print-document h3 {font-size:11pt;font-weight:700;margin:4mm 0 2mm}
-.print-fields {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;margin:0 0 3mm;border-top:1px solid #718f83;border-left:1px solid #718f83}
-.print-fields dt {display:block;font-weight:700;font-size:9pt;padding:5pt 6pt;border-right:1px solid #718f83;background:var(--surface-muted)}
-
-.print-fields dd {display:block;min-width:0;margin:0;padding:5pt 6pt;font-size:10pt;white-space:pre-wrap;overflow-wrap:anywhere}
-.print-fields>div {display:grid;grid-template-columns:minmax(5em,32%) minmax(0,1fr);min-width:0;border-right:1px solid #718f83;border-bottom:1px solid #718f83}
-.print-fields>.wide {grid-template-columns:minmax(5em,16%) minmax(0,1fr)}
+.print-fields {width:100%;table-layout:fixed;border-collapse:collapse;margin:0 0 3mm;border:1px solid #718f83}
+.print-fields .record-label {width:16%}
+.print-fields .record-value {width:34%}
+.print-fields th,.print-fields td {border:1px solid #718f83;padding:5pt 6pt;text-align:left;vertical-align:top;overflow-wrap:anywhere}
+.print-fields th {font-weight:700;font-size:9pt;background:var(--surface-muted)}
+.print-fields td {font-size:10pt;white-space:pre-wrap;background:white}
+.print-fields tbody tr:last-child td {border-bottom:1px solid #718f83}
 #review .print-fields {font-size:14px;line-height:1.5}
-#review .print-fields dt,#review .print-fields dd {font-size:inherit}
+#review .print-fields th,#review .print-fields td {font-size:inherit}
 #print-document .saved-diagram {margin:3mm 0 4mm}
 #print-document .canvas-wrap {background:white;border:0;border-radius:0}
 #print-document .drawing-canvas {width:100%;height:auto;aspect-ratio:8/5;max-height:240mm;pointer-events:none}
 .print-notice {border-top:1px solid var(--line);padding-top:3mm;font-size:10pt}
-@media(max-width:600px){#print-preview{padding:4px}#print-document{padding:16px;min-height:0}.print-fields{grid-template-columns:1fr}}
+@media(max-width:600px){#print-preview{padding:4px}#print-document{padding:16px;min-height:0}.print-fields th,.print-fields td{padding:4pt 3pt}.print-fields .record-label{width:22%}.print-fields .record-value{width:28%}}
 @page {size:A4 portrait;margin:15mm}
 @media print {
   body.printing-note {background:white}
@@ -221,18 +222,14 @@ footer {padding:12px}
   body.printing-note #print-preview> :not(#print-document) {display:none!important}
   body.printing-note main,body.printing-note #note-form,body.printing-note [data-panel="9"],body.printing-note #print-preview {display:block!important;margin:0!important;padding:0!important;border:0!important;max-width:none;background:white}
   body.printing-note #print-document {width:100%;max-width:none;min-height:0;margin:0;padding:0;border:0;font-size:10pt}
-  /* Block flow lets long text paginate independently of grid fragmentation. */
-  body.printing-note .print-fields {display:block;font-size:0}
-  body.printing-note .print-fields>div {font-size:10pt;margin-bottom:0;vertical-align:top}
-  body.printing-note .print-short-field {display:inline-grid;width:50%;padding-right:0;box-sizing:border-box;break-inside:avoid;page-break-inside:avoid}
-
-  body.printing-note .print-long-field {display:block;width:100%;break-inside:avoid;page-break-inside:avoid}
-  body.printing-note .print-long-field dt {border-right:0;border-bottom:1px solid #718f83;break-after:avoid}
-  body.printing-note .print-fields dt {background:white}
-  body.printing-note #print-document h1,body.printing-note #print-document h2,body.printing-note #print-document h3,body.printing-note dt {break-after:avoid}
+  body.printing-note .print-fields .record-label {width:16%}
+  body.printing-note .print-fields .record-value {width:34%}
+  body.printing-note .print-fields tr {break-inside:avoid;page-break-inside:avoid}
+  body.printing-note .print-fields th {background:white}
+  body.printing-note #print-document h1,body.printing-note #print-document h2,body.printing-note #print-document h3,body.printing-note th {break-after:avoid}
   body.printing-note #print-document .canvas-wrap {break-inside:avoid;page-break-inside:avoid}
   body.printing-note #print-document .saved-diagram {break-before:auto;break-inside:auto}
   body.printing-note #print-document .diagram-summary {break-after:avoid}
   body.printing-note #print-document .diagram-summary,body.printing-note #print-document .object-notes,body.printing-note #print-document .diagram-notice {font-size:9pt;line-height:1.4}
-  body.printing-note #print-document p,body.printing-note #print-document dd {orphans:3;widows:3}
+  body.printing-note #print-document p,body.printing-note #print-document td {orphans:3;widows:3}
 }

@@ -168,7 +168,7 @@ def test_print_document_current_data_and_switch_without_mutation():
     if not node:
         pytest.skip('Node is needed for the client-side preview test')
     source = Path('static/form.js').read_text(encoding='utf-8')
-    functions = source[source.index('function printPreview()'):source.index("document.querySelectorAll('[data-review-view]').forEach(button => {\n  button.addEventListener")]
+    functions = source[source.index('function recordTable(entries)'):source.index("document.querySelectorAll('[data-review-view]').forEach(button => {\n  button.addEventListener")]
     note = blank_note()
     note.update(case_id='DEMO-901', operation_date='2026-01-01', blood_loss=0,
                 transfusion='なし', combined_done='なし', combined_detail='非表示の下書き値',
@@ -199,12 +199,24 @@ setReviewView('print-preview');
 function entries(node){return [node,...node.children.flatMap(entries)];}
 let all=entries(nodes['#print-document']);
 let texts=all.map(n=>n.text);
-const fieldRow=label=>all.find(n=>n.tag==='div' && n.children.some(c=>c.tag==='dt' && c.text===label));
+const fieldRow=label=>all.find(n=>n.tag==='tr' && n.children.some(c=>c.tag==='th' && c.text===label));
 assert.equal(fieldRow('症例ID').className,'print-short-field');
-assert.equal(fieldRow('術者').className,'wide print-long-field');
+assert.equal(fieldRow('術者').className,'print-long-field');
 assert.equal(fieldRow('術者').children[1].text,'架空術者B、架空術者A');
-assert.equal(fieldRow('その他の術式').className,'wide print-long-field');
-assert.equal(fieldRow('手術所見・手術経過').className,'wide print-long-field');
+assert.equal(fieldRow('その他の術式').className,'print-long-field');
+assert.equal(fieldRow('手術所見・手術経過').className,'print-long-field');
+for (const row of all.filter(n=>n.tag==='tr')) {
+  assert.equal(row.children.reduce((sum,c)=>sum+Number(c.attributes.colspan||1),0),4);
+}
+const sample=recordTable([
+  {label:'A',text:'1'}, {label:'B',text:'2'}, {label:'C',text:'3'},
+  {label:'長文',text:'改行\nを保持',fullWidth:true}, {label:'D',text:'4'}
+]);
+const rows=sample.children[1].children;
+assert.deepEqual(rows.map(r=>r.children.length),[4,2,2,2]);
+assert.deepEqual(rows.slice(1).map(r=>r.children[1].attributes.colspan),['3','3','3']);
+assert.equal(rows[2].children[1].text,'改行\nを保持');
+assert.equal(rows[0].children[0].attributes.scope,'row');
 assert(texts.includes(0));assert(texts.includes('0 分'));assert(texts.includes('なし'));
 assert(texts.includes('架空の所見\n二行目 <script>test</script>'));
 assert(!texts.includes('術後診断'));assert(!texts.includes('非表示の下書き値'));
@@ -236,13 +248,13 @@ def test_compact_print_layout_and_pagination():
     from pathlib import Path
     css = Path('static/style.css').read_text(encoding='utf-8')
     preview = css.split('/* Step 10 document preview;')[1]
-    assert '.print-fields dt {display:block;' in preview
-    assert '.print-fields dd {display:block;' in preview
+    assert 'table-layout:fixed;border-collapse:collapse' in preview
+    assert '.print-fields th,.print-fields td {border:1px solid #718f83' in preview
     assert 'font-size:16pt' in preview and 'font-size:9pt' in preview
-    assert 'border-right:1px solid #718f83' in preview
+    assert '.record-label {width:16%}' in preview
     assert 'white-space:pre-wrap' in preview
-    assert '.print-long-field {display:block;width:100%;break-inside:avoid' in preview
-    assert '.print-short-field {display:inline-grid;' in preview
+    assert '.print-fields tr {break-inside:avoid;page-break-inside:avoid}' in preview
+    assert 'display:inline-grid' not in preview
     assert '.canvas-wrap {break-inside:avoid;page-break-inside:avoid}' in preview
     assert '.saved-diagram {break-before:auto;break-inside:auto}' in preview
     assert 'break-before:page' not in preview
