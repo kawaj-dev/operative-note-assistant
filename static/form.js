@@ -138,6 +138,29 @@ function showStep(index, remember = true) {
   document.querySelector('#step-count').focus({preventScroll: true});
   if (remember && (state.id || version > 0)) markDirty();
 }
+function recordTable(entries) {
+  const table = element('table', undefined, 'print-fields');
+  const columns = element('colgroup');
+  for (const name of ['label', 'value', 'label', 'value']) columns.append(element('col', undefined, `record-${name}`));
+  const body = element('tbody');
+  table.append(columns, body);
+  for (let i = 0; i < entries.length;) {
+    const first = entries[i++];
+    const pair = !first.fullWidth && i < entries.length && !entries[i].fullWidth;
+    const row = element('tr', undefined, first.fullWidth ? 'print-long-field' : 'print-short-field');
+    const add = (entry, span) => {
+      const label = element('th', entry.label);
+      label.setAttribute('scope', 'row');
+      const value = element('td', entry.text);
+      value.setAttribute('colspan', String(span));
+      row.append(label, value);
+    };
+    add(first, pair ? 1 : 3);
+    if (pair) add(entries[i++], 1);
+    body.append(row);
+  }
+  return table;
+}
 function review() {
   const parent = document.querySelector('#review');
   parent.replaceChildren();
@@ -146,23 +169,19 @@ function review() {
     if (!items.length) continue;
     const section = element('section', undefined, 'detail-section');
     section.append(element('h3', title));
-    const list = element('dl', undefined, 'print-fields');
+    const entries = [];
     for (const field of items.filter(field => visible(field, note))) {
       const value = note[field.name];
       const text = Array.isArray(value) ? value.filter(Boolean).join('、') : value;
       const fullWidth = field.kind === 'textarea' || field.kind === 'checks'
         || (Array.isArray(value) && value.filter(Boolean).length > 1)
         || String(text).length > 24 || String(text).includes('\n');
-      const row = element('div', undefined, fullWidth ? 'wide print-long-field' : 'print-short-field');
-      row.append(element('dt', field.label), element('dd', text === '' ? '未記録' : text));
-      list.append(row);
+      entries.push({label: field.label, text: text === '' ? '未記録' : text, fullWidth});
     }
     if (title === '基本情報') {
-      const row = element('div', undefined, 'print-short-field');
-      row.append(element('dt', '手術時間'), element('dd', duration() === null ? '未記録' : `${duration()} 分`));
-      list.append(row);
+      entries.push({label: '手術時間', text: duration() === null ? '未記録' : `${duration()} 分`, fullWidth: false});
     }
-    section.append(list);
+    section.append(recordTable(entries));
     parent.append(section);
   }
   const diagrams = element('div');
@@ -183,7 +202,7 @@ function printPreview() {
     steps[8][2],
   ];
   groups.forEach((items, index) => {
-    const list = element('dl', undefined, 'print-fields');
+    const entries = [];
     for (const field of items.filter(field => visible(field, note))) {
       const value = note[field.name];
       const text = Array.isArray(value) ? value.filter(v => v !== '').join('、') : value;
@@ -191,16 +210,12 @@ function printPreview() {
       const fullWidth = field.kind === 'textarea' || field.kind === 'checks'
         || (Array.isArray(value) && value.filter(v => v !== '').length > 1)
         || String(text).length > 24 || String(text).includes('\n');
-      const row = element('div', undefined, fullWidth ? 'wide print-long-field' : 'print-short-field');
-      row.append(element('dt', field.label), element('dd', text));
-      list.append(row);
+      entries.push({label: field.label, text, fullWidth});
     }
     if (index === 4 && duration() !== null) {
-      const row = element('div', undefined, 'print-short-field');
-      row.append(element('dt', '手術時間'), element('dd', `${duration()} 分`));
-      list.prepend(row);
+      entries.unshift({label: '手術時間', text: `${duration()} 分`, fullWidth: false});
     }
-    if (list.children.length) parent.append(list);
+    if (entries.length) parent.append(recordTable(entries));
   });
   if (editor.diagrams.length) {
     const diagrams = element('div');
